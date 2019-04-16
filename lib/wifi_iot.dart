@@ -158,12 +158,11 @@ class WiFiForIoTPlugin {
     return await WiFiForIoTPlugin.onWifiScanResultReady.first;
   }
 
-
-  static void forceWifiUsage(bool useWifi) async {
+  static Future<void> forceWifiUsage(bool useWifi) async {
     Map<String, bool> htArguments = new Map();
     htArguments["useWifi"] = useWifi;
     try {
-      await _channel.invokeMethod('forceWifiUsage', htArguments);
+      return await _channel.invokeMethod('forceWifiUsage', htArguments);
     } on MissingPluginException catch (e) {
       print("MissingPluginException : ${e.toString()}");
     }
