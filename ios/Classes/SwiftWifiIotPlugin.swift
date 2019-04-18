@@ -162,7 +162,12 @@ public class SwiftWifiIotPlugin: NSObject, FlutterPlugin {
 
     @available(iOS 11.0, *)
     private func initHotspotConfiguration(ssid: String, passphrase: String?, security: String? = nil) -> NEHotspotConfiguration {
-        switch security?.uppercased() {
+        
+        guard let security = security?.uppercased() else {
+            return NEHotspotConfiguration.init(ssid: ssid)
+        }
+        
+        switch security {
             case "WPA":
                 return NEHotspotConfiguration.init(ssid: ssid, passphrase: passphrase!, isWEP: false)
             case "WEP":
