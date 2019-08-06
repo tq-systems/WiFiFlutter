@@ -461,32 +461,55 @@ public class WifiIotPlugin implements MethodCallHandler, EventChannel.StreamHand
         boolean useWifi = poCall.argument("useWifi");
 
         if (useWifi) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
-                if (((Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)) || ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) && !(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M))) {
-                    final ConnectivityManager manager = (ConnectivityManager) moContext
-                            .getSystemService(Context.CONNECTIVITY_SERVICE);
-                    NetworkRequest.Builder builder;
-                    builder = new NetworkRequest.Builder();
-                    /// set the transport type do WIFI
-                    builder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+            if ( Build.VERSION.SDK_INT >= 21 ) {
 
-                    if (manager != null) {
-                        manager.requestNetwork(builder.build(), new ConnectivityManager.NetworkCallback() {
-                            @Override
-                            public void onAvailable(Network network) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                    manager.bindProcessToNetwork(network);
-                                    manager.unregisterNetworkCallback(this);
-                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                    ConnectivityManager.setProcessDefaultNetwork(network);
-                                    manager.unregisterNetworkCallback(this);
-                                }
-                            }
-                        });
-                    }
+                if (Build.VERSION.SDK_INT == 23 && !Settings.System.canWrite(moContext)) {
+                    Log.d("WifiIoT", "Is on SDK_INT 23 -> we need to get Permissions");
+                    Intent goToSettings = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                    goToSettings.setData(Uri.parse("package:" + moContext.getPackageName()));
+                    moActivity.startActivity(goToSettings);
                 }
+
+                Log.d("WifiIoT", "BindALL onSuccessfulConnection API >= 23");
+          
+                // Marshmallow (API 23+) or newer uses bindProcessToNetwork
+                final NetworkRequest request = new NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .build();
+                
+                final ConnectivityManager connectivityManager = (ConnectivityManager) moContext
+                    .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+                connectivityManager.setProcessDefaultNetwork()
+          
+                ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(Network network) {
+                        if(Build.VERSION.SDK_INT >= 23) {
+                            Log.d("WifiIoT", "onAvailable Callback with SDK_INT >= 23 -> bindProcessNetwork");
+                            if (connectivityManager.bindProcessToNetwork(network)) {
+                                Log.d("WifiIoT", "bindProcessToNetwork TRUE onSuccessfulConnection");
+                            } else {
+                                Log.d("WifiIoT", "bindProcessToNetwork FALSE onSuccessfulConnection");
+                            }
+                        } else if (Build.VERSION.SDK_INT >= 21) {
+                            Log.d("WifiIoT", "onAvailable Callback with SDK_INT >= 21 -> setProcessDefaultNetwork");
+                            connectivityManager.setProcessDefaultNetwork(network);
+                        }
+                        connectivityManager.unregisterNetworkCallback(this);
+
+                    }
+                };
+          
+                connectivityManager.requestNetwork(request, networkCallback);
+
+            } else {
+                // Technically we should never reach this with older API, but just in case
+                Log.d("WifiIoT", "BindALL onSuccessfulConnection API older than 21, no need to do any binding");         
             }
+
+            // --------------------------- unforce --------------------------
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 ConnectivityManager manager = (ConnectivityManager) moContext
