@@ -481,8 +481,7 @@ public class WifiIotPlugin implements MethodCallHandler, EventChannel.StreamHand
                 final ConnectivityManager connectivityManager = (ConnectivityManager) moContext
                     .getSystemService(Context.CONNECTIVITY_SERVICE);
 
-                connectivityManager.setProcessDefaultNetwork()
-          
+
                 ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
                     @Override
                     public void onAvailable(Network network) {
